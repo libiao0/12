@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>日期数字计算</title>
+<style>
+body{font-family:Consolas,monospace;font-size:20px;padding:24px;}
+.info{display:none;}  /* 把前面4行全部隐藏 */
+.result{font-size:36px;color:#c81010;font-weight:bold;margin-top:16px;}
+</style>
+</head>
+<body>
+<div class="info">今日短码：<span id="todayCode"></span></div>
+<div class="info">昨日短码：<span id="yestCode"></span></div>
+<div class="info">今日+3短码：<span id="plus3Code"></span></div>
+<div class="info">计算公式：today × yesterday × (today+3)</div>
+<div class="result">今日补偿密码：<span id="out"></span></div>
+
+<script>
+// 根据Date对象生成 26825 格式：后两位年 + 月 + 日
+function getShortCode(d){
+    const y = String(d.getFullYear()).slice(-2);
+    const m = d.getMonth()+1;
+    const day = d.getDate();
+    return Number(y + "" + m + "" + day);
+}
+
+// 获取日期
+const now = new Date();
+const yesterday = new Date(now);
+yesterday.setDate(now.getDate()-1);
+
+const todayCode = getShortCode(now);
+const yestCode = getShortCode(yesterday);
+const plus3Code = todayCode + 3;
+
+// BigInt大数相乘，防止溢出
+const total = BigInt(todayCode) * BigInt(yestCode) * BigInt(plus3Code);
+const last8 = total % 100000000n;
+
+document.getElementById('out').innerText = last8.toString();
+</script>
+</body>
+</html>
