@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>日期数字计算</title>
 <style>
 * {
@@ -40,7 +43,6 @@ body {
 }
 
 .result-label {
-    /* 标签文字不再显示，标题动画已经是今日补偿密码 */
     display:none;
 }
 
@@ -68,23 +70,25 @@ body {
     <div class="result-label">今日补偿密码</div>
     <div class="result-value" id="out"></div>
 
-    <div class="footer">当前设备日期自动计算</div>
+    <div class="footer">
+当前设备日期自动计算&nbsp;&nbsp;|&nbsp;&nbsp;总访问：<span id="busuanzi_value_site_pv"></span>次
+    </div>
 </div>
+
+<!--不蒜子访问统计，无需注册账号-->
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
 <script>
 const titleText = "今日补偿密码";
 const titleDom = document.getElementById('titleDom');
 
 async function typeEffect(){
-    //逐字打出：今 → 日 → 补 → 偿 → 密 → 码
     titleDom.innerText = "";
     for(let i=0;i<titleText.length;i++){
         titleDom.innerText = titleText.substring(0,i+1);
-        await sleep(150);
+        await sleep(180);
     }
-    //完整文字停留 3000毫秒 = 3秒
-    await sleep(8000);
-    //从第一个字开始逐个消失
+    await sleep(3000);
     for(let i=0;i<titleText.length;i++){
         titleDom.innerText = titleText.substring(i+1);
         await sleep(180);
@@ -98,8 +102,7 @@ function sleep(ms){
 }
 typeEffect();
 
-
-//密码计算逻辑，完全不变
+//密码计算逻辑
 function getShortCode(d){
     const y = String(d.getFullYear()).slice(-2);
     const m = d.getMonth()+1;
