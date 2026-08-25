@@ -2,22 +2,104 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>日期数字计算</title>
 <style>
-body{font-family:Consolas,monospace;font-size:20px;padding:24px;}
-.info{display:none;}  /* 把前面4行全部隐藏 */
-.result{font-size:36px;color:#c81010;font-weight:bold;margin-top:16px;}
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Consolas, monospace;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+    padding: 20px;
+}
+
+.card {
+    background: #ffffff;
+    width: 100%;
+    max-width: 420px;
+    padding: 32px 24px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
+    text-align: center;
+}
+
+.title {
+    font-size: 22px;
+    color: #1f2329;
+    margin-bottom: 24px;
+    font-weight: 600;
+    min-height:28px;
+}
+
+.result-label {
+    /* 标签文字不再显示，标题动画已经是今日补偿密码 */
+    display:none;
+}
+
+.result-value {
+    font-size: 48px;
+    color: #c81010;
+    font-weight: 800;
+    letter-spacing: 4px;
+    line-height: 1;
+    margin-bottom: 20px;
+}
+
+.footer {
+    margin-top: 24px;
+    font-size: 13px;
+    color: #9ca3af;
+}
 </style>
 </head>
 <body>
-<div class="info">今日短码：<span id="todayCode"></span></div>
-<div class="info">昨日短码：<span id="yestCode"></span></div>
-<div class="info">今日+3短码：<span id="plus3Code"></span></div>
-<div class="info">计算公式：today × yesterday × (today+3)</div>
-<div class="result">今日补偿密码：<span id="out"></span></div>
+
+<div class="card">
+    <div class="title" id="titleDom"></div>
+
+    <div class="result-label">今日补偿密码</div>
+    <div class="result-value" id="out"></div>
+
+    <div class="footer">当前设备日期自动计算</div>
+</div>
 
 <script>
-// 根据Date对象生成 26825 格式：后两位年 + 月 + 日
+const titleText = "今日补偿密码";
+const titleDom = document.getElementById('titleDom');
+
+async function typeEffect(){
+    //逐字打出：今 → 日 → 补 → 偿 → 密 → 码
+    titleDom.innerText = "";
+    for(let i=0;i<titleText.length;i++){
+        titleDom.innerText = titleText.substring(0,i+1);
+        await sleep(150);
+    }
+    //完整文字停留 3000毫秒 = 3秒
+    await sleep(8000);
+    //从第一个字开始逐个消失
+    for(let i=0;i<titleText.length;i++){
+        titleDom.innerText = titleText.substring(i+1);
+        await sleep(180);
+    }
+    await sleep(600);
+    typeEffect();
+}
+
+function sleep(ms){
+    return new Promise(resolve=>setTimeout(resolve,ms));
+}
+typeEffect();
+
+
+//密码计算逻辑，完全不变
 function getShortCode(d){
     const y = String(d.getFullYear()).slice(-2);
     const m = d.getMonth()+1;
@@ -25,7 +107,6 @@ function getShortCode(d){
     return Number(y + "" + m + "" + day);
 }
 
-// 获取日期
 const now = new Date();
 const yesterday = new Date(now);
 yesterday.setDate(now.getDate()-1);
@@ -34,11 +115,11 @@ const todayCode = getShortCode(now);
 const yestCode = getShortCode(yesterday);
 const plus3Code = todayCode + 3;
 
-// BigInt大数相乘，防止溢出
 const total = BigInt(todayCode) * BigInt(yestCode) * BigInt(plus3Code);
 const last8 = total % 100000000n;
 
 document.getElementById('out').innerText = last8.toString();
 </script>
+
 </body>
 </html>
