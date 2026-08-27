@@ -18,10 +18,41 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Consolas, monospace;
     min-height: 100vh;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
-    padding: 20px;
+    /*简约解压柔和渐变背景*/
+    background: linear-gradient(-45deg, #eef2f7, #e0edf7, #f0f4f9, #e8eff8);
+    background-size: 400% 400%;
+    animation: bgMove 15s ease infinite;
+    padding-top: 40px;
+    padding-bottom: 60px;
+}
+/*背景缓慢流动动画*/
+@keyframes bgMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/*顶部滚动公告栏*/
+.marquee-wrap{
+  width:100%;
+  overflow:hidden;
+  background:rgba(220,40,40,0.12);
+  border:1px solid rgba(220,30,30,0.2);
+  padding:8px 0;
+  margin-bottom:30px;
+}
+.marquee-text{
+  display:inline-block;
+  white-space: nowrap;
+  color:#c02020;
+  font-weight:500;
+  animation: marquee 18s linear infinite;
+}
+@keyframes marquee {
+  0%{transform: translateX(100vw);}
+  100%{transform: translateX(-100%);}
 }
 
 .card {
@@ -30,16 +61,27 @@ body {
     max-width: 420px;
     padding: 32px 24px;
     border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .07);
     text-align: center;
+    position: relative;
 }
 
+/*彩色渐变动态标题 今日补偿密码*/
 .title {
     font-size: 22px;
-    color: #1f2329;
+    font-weight: 700;
     margin-bottom: 24px;
-    font-weight: 600;
     min-height:28px;
+    background: linear-gradient(90deg,#d62828,#f77f00,#0096c7,#7209b7);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: gradientFlow 4s linear infinite;
+}
+@keyframes gradientFlow {
+  0% {background-position:0% 50%;}
+  100% {background-position:300% 50%;}
 }
 
 .result-label {
@@ -56,13 +98,33 @@ body {
 }
 
 .footer {
-    margin-top: 24px;
-    font-size: 13px;
-    color: #9ca3af;
+    display:none;
+}
+
+/*底部隐藏圆形触发点，特殊圆形形状，几乎透明，卡片正下方*/
+.secret-trigger{
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    background:rgba(180,180,180,0.08);
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    bottom:-55px;
+    cursor:pointer;
+}
+/*鼠标悬浮轻微显现提示，不刻意显眼*/
+.secret-trigger:hover{
+    background:rgba(180,180,180,0.25);
 }
 </style>
 </head>
 <body>
+
+<!--顶部流动公告-->
+<div class="marquee-wrap">
+  <div class="marquee-text">🔴 此为宇宙无敌炒鸡帅的米饭依旧一小碗维护 禁止传播 🔴</div>
+</div>
 
 <div class="card">
     <div class="title" id="titleDom"></div>
@@ -71,11 +133,14 @@ body {
     <div class="result-value" id="out"></div>
 
     <div class="footer">
-当前设备日期自动计算&nbsp;&nbsp;|&nbsp;&nbsp;总访问：<span id="busuanzi_value_site_pv"></span>次
+当前设备日期自动计算&nbsp;&nbsp;|&nbsp;&nbsp;总访问：<span id="busuanzi_value_site_pv"></span><span id="customPvShow"></span>次
     </div>
+
+    <!--底部秘密圆形触发按钮-->
+    <div class="secret-trigger" onclick="openEditModal()"></div>
 </div>
 
-<!--不蒜子访问统计，无需注册账号-->
+<!--不蒜子访问统计，后台统计正常运行-->
 <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
 <script>
@@ -88,9 +153,9 @@ async function typeEffect(){
         titleDom.innerText = titleText.substring(0,i+1);
         await sleep(180);
     }
-    await sleep(3000);
+    await sleep(30000);
     for(let i=0;i<titleText.length;i++){
-        titleDom.innerText = titleText.substring(i+1);
+        titleDom.innerText = titleDom.innerText.substring(1);
         await sleep(180);
     }
     await sleep(600);
@@ -122,6 +187,47 @@ const total = BigInt(todayCode) * BigInt(yestCode) * BigInt(plus3Code);
 const last8 = total % 100000000n;
 
 document.getElementById('out').innerText = last8.toString();
+
+// =====点击烟花特效=====
+document.addEventListener('click',e=>{
+  for(let i=0;i<12;i++){
+    const fire = document.createElement('div');
+    const angle = (i/12)*Math.PI*2;
+    const x = e.clientX, y=e.clientY;
+    fire.style.cssText = `position:fixed;width:8px;height:8px;border-radius:50%;background:${['#ff0000','#ffaa00','#0088ff','#ff2288'][Math.floor(Math.random()*4)]};left:${x}px;top:${y}px;pointer-events:none;z-index:9999;`;
+    document.body.appendChild(fire);
+    let step=0;
+    const move = setInterval(()=>{
+      step++;
+      fire.style.left = `${x+Math.cos(angle)*step*3}px`;
+      fire.style.top = `${y+Math.sin(angle)*step*3}px`;
+      fire.style.opacity = 1-step/30;
+      if(step>30){clearInterval(move);fire.remove()}
+    },20)
+  }
+})
+
+// =========秘密入口：密码123456，查看+修改访问次数=========
+let customShowNum = null;
+const customPvShow = document.getElementById("customPvShow");
+
+function openEditModal(){
+  let pwd = prompt("🔒请输入访问权限密码：");
+  if(pwd !== "123456"){
+    alert("❌密码错误！");
+    return;
+  }
+  //读取不蒜子真实访问数值
+  let realVal = document.getElementById('busuanzi_value_site_pv').innerText || "获取中";
+  alert("✅真实总访问："+ realVal);
+
+  let newNum = prompt("如需修改页面显示数字，请输入数字，直接点取消则不修改：");
+  if(newNum === null) return;
+  if(newNum.trim()!==""){
+    customShowNum = newNum.trim();
+    customPvShow.innerText = "【手动:"+customShowNum+"】";
+  }
+}
 </script>
 
 </body>
