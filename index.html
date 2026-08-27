@@ -19,34 +19,35 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     align-items: center;
-    /*简约解压柔和渐变背景*/
-    background: linear-gradient(-45deg, #eef2f7, #e0edf7, #f0f4f9, #e8eff8);
-    background-size: 400% 400%;
-    animation: bgMove 15s ease infinite;
-    padding-top: 40px;
-    padding-bottom: 60px;
-}
-/*背景缓慢流动动画*/
-@keyframes bgMove {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+    background:#000000;
+    overflow:hidden;
 }
 
-/*顶部滚动公告栏*/
+#starCanvas{
+    position:fixed;
+    z-index:-1;
+    top:0;
+    left:0;
+    width:100vw;
+    height:100vh;
+}
+
 .marquee-wrap{
   width:100%;
   overflow:hidden;
-  background:rgba(220,40,40,0.12);
-  border:1px solid rgba(220,30,30,0.2);
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.15);
   padding:8px 0;
-  margin-bottom:30px;
+  position: fixed;
+  top:0;
+  left:0;
 }
 .marquee-text{
   display:inline-block;
   white-space: nowrap;
-  color:#c02020;
+  color:#ffffff;
   font-weight:500;
   animation: marquee 18s linear infinite;
 }
@@ -56,17 +57,16 @@ body {
 }
 
 .card {
-    background: #ffffff;
+    background: rgba(255,255,255,0.94);
     width: 100%;
     max-width: 420px;
     padding: 32px 24px;
     border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, .07);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
     text-align: center;
     position: relative;
 }
 
-/*彩色渐变动态标题 今日补偿密码*/
 .title {
     font-size: 22px;
     font-weight: 700;
@@ -101,49 +101,227 @@ body {
     display:none;
 }
 
-/*底部隐藏圆形触发点，特殊圆形形状，几乎透明，卡片正下方*/
 .secret-trigger{
-    width:42px;
-    height:42px;
-    border-radius:50%;
-    background:rgba(180,180,180,0.08);
+    width:60px;
+    height:60px;
     position:absolute;
     left:50%;
     transform:translateX(-50%);
-    bottom:-55px;
+    bottom:-60px;
     cursor:pointer;
+    background:transparent;
 }
-/*鼠标悬浮轻微显现提示，不刻意显眼*/
-.secret-trigger:hover{
-    background:rgba(180,180,180,0.25);
+
+.modal-mask{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100vw;
+    height:100vh;
+    background:rgba(0,0,0,0.65);
+    z-index:10000;
+    display:none;
+    justify-content:center;
+    align-items:center;
+}
+.modal-box{
+    background:#ffffff;
+    padding:26px 24px;
+    border-radius:12px;
+    width:90%;
+    max-width:360px;
+}
+.modal-box p{
+    margin-bottom:14px;
+    font-size:15px;
+    white-space:pre-line;
+}
+.modal-btn-group{
+    display:flex;
+    gap:10px;
+    margin-bottom:12px;
+}
+.modal-btn-group button{
+    flex:1;
+    padding:9px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:14px;
+}
+.btn-ok{background:#2563eb;color:#fff;}
+.btn-cancel{background:#e5e7eb;color:#333;}
+
+/*颜色拾取区域，色块列表，点击色块输出十六进制*/
+.color-palette{
+    display:grid;
+    grid-template-columns: repeat(6,1fr);
+    gap:6px;
+    margin:10px 0;
+}
+.color-item{
+    height:36px;
+    border-radius:4px;
+    cursor:pointer;
+    border:1px solid #999;
+}
+.hex-show{
+    font-family:Consolas;
+    font-size:17px;
+    text-align:center;
+    padding:8px;
+    background:#f4f4f4;
+    border-radius:6px;
+    margin-top:8px;
 }
 </style>
 </head>
 <body>
 
-<!--顶部流动公告-->
+<canvas id="starCanvas"></canvas>
+
 <div class="marquee-wrap">
   <div class="marquee-text">🔴 此为宇宙无敌炒鸡帅的米饭依旧一小碗维护 禁止传播 🔴</div>
 </div>
 
 <div class="card">
     <div class="title" id="titleDom"></div>
-
     <div class="result-label">今日补偿密码</div>
     <div class="result-value" id="out"></div>
-
     <div class="footer">
 当前设备日期自动计算&nbsp;&nbsp;|&nbsp;&nbsp;总访问：<span id="busuanzi_value_site_pv"></span><span id="customPvShow"></span>次
     </div>
-
-    <!--底部秘密圆形触发按钮-->
     <div class="secret-trigger" onclick="openEditModal()"></div>
 </div>
 
-<!--不蒜子访问统计，后台统计正常运行-->
+<div class="modal-mask" id="mask">
+    <div class="modal-box">
+        <p id="modalTip">🔒请输入访问权限密码</p >
+        <input id="modalInput" type="password" autocomplete="off">
+        <div class="modal-btn-group">
+            <button class="btn-ok" onclick="modalConfirm()">确定</button>
+            <button class="btn-cancel" onclick="modalClose()">取消</button>
+        </div>
+
+        <div id="colorModule" style="display:none;">
+            <p>👇点击下方色块，直接显示16进制色值</p >
+            <div class="color-palette" id="paletteBox"></div>
+            <div class="hex-show" id="hexOutput">HEX：#------</div>
+        </div>
+    </div>
+</div>
+
 <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
 <script>
+const canvas = document.getElementById('starCanvas');
+const ctx = canvas.getContext('2d');
+let w,h;
+let stars = [];
+let rotateAngle = 0;
+
+//处女座星座坐标
+const virgoPoints = [
+    {x:0.22,y:0.32},{x:0.28,y:0.36},{x:0.34,y:0.34},{x:0.40,y:0.38},
+    {x:0.46,y:0.44},{x:0.52,y:0.42},{x:0.58,y:0.48},{x:0.64,y:0.54},
+    {x:0.60,y:0.62},{x:0.54,y:0.66},{x:0.44,y:0.64},{x:0.36,y:0.58},
+    {x:0.30,y:0.50},{x:0.32,y:0.42}
+];
+const virgoLinks = [
+    [0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],
+    [7,8],[8,9],[9,10],[10,11],[11,12],[12,13],[13,2]
+];
+let virgoStarList = [];
+
+function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    virgoStarList = [];
+    const cx = w*0.5;
+    const cy = h*0.45;
+    const scale = Math.min(w,h)*0.38;
+    virgoPoints.forEach(p=>{
+        virgoStarList.push({
+            x: cx + (p.x-0.5)*scale,
+            y: cy + (p.y-0.5)*scale,
+            r:Math.random()*1.4+0.3,
+            twinkle:Math.random()*0.022
+        })
+    })
+}
+resize();
+window.addEventListener('resize',resize);
+
+for(let i=0;i<420;i++){
+    stars.push({
+        x:Math.random()*w,
+        y:Math.random()*h,
+        r:Math.random()*1.1+0.15,
+        twinkle:Math.random()*0.018
+    })
+}
+
+function drawStarSky(){
+    ctx.fillStyle="#000000";
+    ctx.fillRect(0,0,w,h);
+    rotateAngle += 0.0004;
+
+    ctx.save();
+    ctx.translate(w/2,h/2);
+    ctx.rotate(rotateAngle);
+    ctx.translate(-w/2,-h/2);
+
+    ctx.strokeStyle="rgba(160,190,255,0.18)";
+    ctx.lineWidth=0.5;
+    virgoLinks.forEach(([a,b])=>{
+        const s1 = virgoStarList[a];
+        const s2 = virgoStarList[b];
+        ctx.beginPath();
+        ctx.moveTo(s1.x,s1.y);
+        ctx.lineTo(s2.x,s2.y);
+        ctx.stroke();
+    })
+    ctx.restore();
+
+    virgoStarList.forEach(s=>{
+        const alpha = 0.4 + Math.sin(Date.now()*s.twinkle)*0.45;
+        ctx.beginPath();
+        ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(220,235,255,${alpha})`;
+        ctx.fill();
+    })
+    stars.forEach(s=>{
+        const alpha = 0.3 + Math.sin(Date.now()*s.twinkle)*0.4;
+        ctx.beginPath();
+        ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(255,255,255,${alpha})`;
+        ctx.fill();
+    })
+    requestAnimationFrame(drawStarSky);
+}
+drawStarSky();
+
+//预设常用色板
+const colorList = [
+    "#ff0000","#ff8800","#ffff00","#00ff00","#00ffff","#0088ff",
+    "#0000ff","#8800ff","#ff00ff","#ffffff","#888888","#000000",
+    "#d62828","#f77f00","#fcbf49","#0096c7","#023e8a","#7209b7",
+    "#e63946","#457b9d","#1d3557","#f1faee","#a8dadc","#2a9d8f"
+];
+const paletteBox = document.getElementById("paletteBox");
+const hexOutput = document.getElementById("hexOutput");
+//渲染色块
+colorList.forEach(hex=>{
+    const div = document.createElement("div");
+    div.className = "color-item";
+    div.style.background = hex;
+    div.dataset.hex = hex.toUpperCase();
+    div.onclick = function(){
+        hexOutput.innerText = "HEX：" + this.dataset.hex;
+    }
+    paletteBox.appendChild(div);
+})
+
 const titleText = "今日补偿密码";
 const titleDom = document.getElementById('titleDom');
 
@@ -167,7 +345,6 @@ function sleep(ms){
 }
 typeEffect();
 
-//密码计算逻辑
 function getShortCode(d){
     const y = String(d.getFullYear()).slice(-2);
     const m = d.getMonth()+1;
@@ -185,10 +362,8 @@ const plus3Code = todayCode + 3;
 
 const total = BigInt(todayCode) * BigInt(yestCode) * BigInt(plus3Code);
 const last8 = total % 100000000n;
-
 document.getElementById('out').innerText = last8.toString();
 
-// =====点击烟花特效=====
 document.addEventListener('click',e=>{
   for(let i=0;i<12;i++){
     const fire = document.createElement('div');
@@ -207,27 +382,55 @@ document.addEventListener('click',e=>{
   }
 })
 
-// =========秘密入口：密码123456，查看+修改访问次数=========
 let customShowNum = null;
 const customPvShow = document.getElementById("customPvShow");
+const mask = document.getElementById('mask');
+const modalInput = document.getElementById('modalInput');
+const modalTip = document.getElementById('modalTip');
+const colorModule = document.getElementById("colorModule");
+let modalStage = 0;
+let realPvValue = "";
 
 function openEditModal(){
-  let pwd = prompt("🔒请输入访问权限密码：");
-  if(pwd !== "123456"){
-    alert("❌密码错误！");
-    return;
-  }
-  //读取不蒜子真实访问数值
-  let realVal = document.getElementById('busuanzi_value_site_pv').innerText || "获取中";
-  alert("✅真实总访问："+ realVal);
-
-  let newNum = prompt("如需修改页面显示数字，请输入数字，直接点取消则不修改：");
-  if(newNum === null) return;
-  if(newNum.trim()!==""){
-    customShowNum = newNum.trim();
-    customPvShow.innerText = "【手动:"+customShowNum+"】";
-  }
+    modalStage = 0;
+    modalTip.innerText = "🔒请输入访问权限密码";
+    modalInput.value = "";
+    modalInput.type = "password";
+    colorModule.style.display="none";
+    hexOutput.innerText = "HEX：#------";
+    mask.style.display = "flex";
+    modalInput.focus();
 }
+function modalClose(){
+    mask.style.display = "none";
+}
+function modalConfirm(){
+    const val = modalInput.value.trim();
+    if(modalStage===0){
+        if(val !== "123456"){
+            alert("❌密码错误！");
+            modalClose();
+            return;
+        }
+        realPvValue = document.getElementById('busuanzi_value_site_pv').innerText || "获取中";
+        modalStage =1;
+        modalTip.innerText = `✅真实总访问：${realPvValue}\n如需修改页面显示数字，请输入，留空则跳过\n点击色板色块读取十六进制`;
+        modalInput.value = "";
+        modalInput.type="text";
+        colorModule.style.display="block";
+        modalInput.focus();
+    }else if(modalStage===1){
+        if(val!==""){
+            customShowNum = val;
+            customPvShow.innerText = "【手动:"+customShowNum+"】";
+        }
+        modalClose();
+    }
+}
+
+document.getElementById('modalInput').addEventListener('keydown',e=>{
+    if(e.key==='Enter') modalConfirm();
+})
 </script>
 
 </body>
