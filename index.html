@@ -18,6 +18,9 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Consolas, monospace;
     min-height: 100vh;
     overflow:hidden;
+    display:flex;
+    justify-content:center;
+    align-items:center;
 }
 
 .bg-layer {
@@ -68,21 +71,20 @@ body {
   100%{transform: translateX(-100%);}
 }
 
-.drag-window{
-    position:absolute;
+/*主体固定居中，取消拖拽*/
+.main-box{
     width:100%;
     max-width:420px;
     border-radius:16px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, .09);
     overflow:hidden;
     z-index:10;
-    cursor:move;
-    user-select:none;
 }
-.drag-content{
+.main-content{
     background: rgba(255,255,255,0.96);
     padding: 32px 24px;
     text-align: center;
+    position:relative;
 }
 
 .title {
@@ -201,8 +203,8 @@ body {
   <div class="marquee-text">🔴 此为宇宙无敌炒鸡帅的米饭依旧一小碗维护 禁止传播 🔴</div>
 </div>
 
-<div class="drag-window" id="dragWin">
-    <div class="drag-content">
+<div class="main-box">
+    <div class="main-content">
         <div class="title" id="titleDom"></div>
         <div class="result-label">今日补偿密码</div>
         <div class="result-value" id="out"></div>
@@ -238,37 +240,6 @@ const bgClassList = ["bg0","bg1","bg2","bg3","bg4","bg5","bg6","bg7","bg8","bg9"
 const bgLayer = document.getElementById("bgLayer");
 const randCls = bgClassList[Math.floor(Math.random() * bgClassList.length)];
 bgLayer.classList.add(randCls);
-
-//拖拽
-const dragWin = document.getElementById("dragWin");
-let isDrag = false;
-let offsetX, offsetY;
-dragWin.style.left = (window.innerWidth - 420) / 2 + "px";
-dragWin.style.top = (window.innerHeight - 320) / 2 + "px";
-
-dragWin.addEventListener('mousedown', (e) => {
-    isDrag = true;
-    offsetX = e.clientX - dragWin.offsetLeft;
-    offsetY = e.clientY - dragWin.offsetTop;
-    dragWin.style.zIndex = 99;
-    e.preventDefault();
-});
-
-document.addEventListener('mousemove', (e) => {
-    if (!isDrag) return;
-    let nx = e.clientX - offsetX;
-    let ny = e.clientY - offsetY;
-    if (nx < 0) nx = 0;
-    if (ny < 30) ny = 30;
-    if (nx + dragWin.offsetWidth > window.innerWidth) nx = window.innerWidth - dragWin.offsetWidth;
-    if (ny + dragWin.offsetHeight > window.innerHeight) ny = window.innerHeight - dragWin.offsetHeight;
-    dragWin.style.left = nx + "px";
-    dragWin.style.top = ny + "px";
-});
-
-document.addEventListener('mouseup', () => {
-    isDrag = false;
-});
 
 //色板
 const colorList = [
