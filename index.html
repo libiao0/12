@@ -17,37 +17,49 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Consolas, monospace;
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background:#000000;
     overflow:hidden;
 }
 
-#starCanvas{
+.bg-layer {
     position:fixed;
-    z-index:-1;
+    z-index:-2;
     top:0;
     left:0;
     width:100vw;
     height:100vh;
 }
 
+/*14种差异明显的浅色系，冷暖青紫蓝灰区分开*/
+.bg0 { background:#f7f3ef; }
+.bg1 { background:#eef4f9; }
+.bg2 { background:#edf7f2; }
+.bg3 { background:#f9efee; }
+.bg4 { background:#f2eef8; }
+.bg5 { background:#f8eef2; }
+.bg6 { background:#ebf4f8; }
+.bg7 { background:#f8f2e6; }
+.bg8 { background:#ececec; }
+.bg9 { background:#e9f1f7; }
+.bg10 { background:#f9ede4; }
+.bg11 { background:#f0edf5; }
+.bg12 { background:#eaf2f0; }
+.bg13 { background:#f6f0f0; }
+
 .marquee-wrap{
   width:100%;
   overflow:hidden;
-  background:rgba(255,255,255,0.08);
-  border:1px solid rgba(255,255,255,0.15);
+  background:rgba(0,0,0,0.07);
+  border:1px solid rgba(0,0,0,0.11);
   padding:8px 0;
   position: fixed;
   top:0;
   left:0;
+  z-index:10;
 }
 .marquee-text{
   display:inline-block;
   white-space: nowrap;
-  color:#ffffff;
+  color:#222831;
   font-weight:500;
   animation: marquee 18s linear infinite;
 }
@@ -56,15 +68,21 @@ body {
   100%{transform: translateX(-100%);}
 }
 
-.card {
-    background: rgba(255,255,255,0.94);
-    width: 100%;
-    max-width: 420px;
+.drag-window{
+    position:absolute;
+    width:100%;
+    max-width:420px;
+    border-radius:16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .09);
+    overflow:hidden;
+    z-index:10;
+    cursor:move;
+    user-select:none;
+}
+.drag-content{
+    background: rgba(255,255,255,0.96);
     padding: 32px 24px;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
     text-align: center;
-    position: relative;
 }
 
 .title {
@@ -103,11 +121,11 @@ body {
 
 .secret-trigger{
     width:60px;
-    height:60px;
+    height:20px;
     position:absolute;
     left:50%;
     transform:translateX(-50%);
-    bottom:-60px;
+    bottom:0px;
     cursor:pointer;
     background:transparent;
 }
@@ -118,7 +136,7 @@ body {
     left:0;
     width:100vw;
     height:100vh;
-    background:rgba(0,0,0,0.65);
+    background:rgba(0,0,0,0.45);
     z-index:10000;
     display:none;
     justify-content:center;
@@ -129,7 +147,7 @@ body {
     padding:26px 24px;
     border-radius:12px;
     width:90%;
-    max-width:360px;
+    max-width:420px;
 }
 .modal-box p{
     margin-bottom:14px;
@@ -152,15 +170,14 @@ body {
 .btn-ok{background:#2563eb;color:#fff;}
 .btn-cancel{background:#e5e7eb;color:#333;}
 
-/*颜色拾取区域，色块列表，点击色块输出十六进制*/
 .color-palette{
     display:grid;
-    grid-template-columns: repeat(6,1fr);
-    gap:6px;
+    grid-template-columns: repeat(8,1fr);
+    gap:5px;
     margin:10px 0;
 }
 .color-item{
-    height:36px;
+    height:32px;
     border-radius:4px;
     cursor:pointer;
     border:1px solid #999;
@@ -178,20 +195,22 @@ body {
 </head>
 <body>
 
-<canvas id="starCanvas"></canvas>
+<div class="bg-layer" id="bgLayer"></div>
 
 <div class="marquee-wrap">
   <div class="marquee-text">🔴 此为宇宙无敌炒鸡帅的米饭依旧一小碗维护 禁止传播 🔴</div>
 </div>
 
-<div class="card">
-    <div class="title" id="titleDom"></div>
-    <div class="result-label">今日补偿密码</div>
-    <div class="result-value" id="out"></div>
-    <div class="footer">
+<div class="drag-window" id="dragWin">
+    <div class="drag-content">
+        <div class="title" id="titleDom"></div>
+        <div class="result-label">今日补偿密码</div>
+        <div class="result-value" id="out"></div>
+        <div class="footer">
 当前设备日期自动计算&nbsp;&nbsp;|&nbsp;&nbsp;总访问：<span id="busuanzi_value_site_pv"></span><span id="customPvShow"></span>次
+        </div>
+        <div class="secret-trigger" onclick="openEditModal()"></div>
     </div>
-    <div class="secret-trigger" onclick="openEditModal()"></div>
 </div>
 
 <div class="modal-mask" id="mask">
@@ -214,103 +233,56 @@ body {
 <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
 <script>
-const canvas = document.getElementById('starCanvas');
-const ctx = canvas.getContext('2d');
-let w,h;
-let stars = [];
-let rotateAngle = 0;
+//14组风格区分大的背景类
+const bgClassList = ["bg0","bg1","bg2","bg3","bg4","bg5","bg6","bg7","bg8","bg9","bg10","bg11","bg12","bg13"];
+const bgLayer = document.getElementById("bgLayer");
+const randCls = bgClassList[Math.floor(Math.random() * bgClassList.length)];
+bgLayer.classList.add(randCls);
 
-//处女座星座坐标
-const virgoPoints = [
-    {x:0.22,y:0.32},{x:0.28,y:0.36},{x:0.34,y:0.34},{x:0.40,y:0.38},
-    {x:0.46,y:0.44},{x:0.52,y:0.42},{x:0.58,y:0.48},{x:0.64,y:0.54},
-    {x:0.60,y:0.62},{x:0.54,y:0.66},{x:0.44,y:0.64},{x:0.36,y:0.58},
-    {x:0.30,y:0.50},{x:0.32,y:0.42}
-];
-const virgoLinks = [
-    [0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],
-    [7,8],[8,9],[9,10],[10,11],[11,12],[12,13],[13,2]
-];
-let virgoStarList = [];
+//拖拽
+const dragWin = document.getElementById("dragWin");
+let isDrag = false;
+let offsetX, offsetY;
+dragWin.style.left = (window.innerWidth - 420) / 2 + "px";
+dragWin.style.top = (window.innerHeight - 320) / 2 + "px";
 
-function resize(){
-    w = canvas.width = window.innerWidth;
-    h = canvas.height = window.innerHeight;
-    virgoStarList = [];
-    const cx = w*0.5;
-    const cy = h*0.45;
-    const scale = Math.min(w,h)*0.38;
-    virgoPoints.forEach(p=>{
-        virgoStarList.push({
-            x: cx + (p.x-0.5)*scale,
-            y: cy + (p.y-0.5)*scale,
-            r:Math.random()*1.4+0.3,
-            twinkle:Math.random()*0.022
-        })
-    })
-}
-resize();
-window.addEventListener('resize',resize);
+dragWin.addEventListener('mousedown', (e) => {
+    isDrag = true;
+    offsetX = e.clientX - dragWin.offsetLeft;
+    offsetY = e.clientY - dragWin.offsetTop;
+    dragWin.style.zIndex = 99;
+    e.preventDefault();
+});
 
-for(let i=0;i<420;i++){
-    stars.push({
-        x:Math.random()*w,
-        y:Math.random()*h,
-        r:Math.random()*1.1+0.15,
-        twinkle:Math.random()*0.018
-    })
-}
+document.addEventListener('mousemove', (e) => {
+    if (!isDrag) return;
+    let nx = e.clientX - offsetX;
+    let ny = e.clientY - offsetY;
+    if (nx < 0) nx = 0;
+    if (ny < 30) ny = 30;
+    if (nx + dragWin.offsetWidth > window.innerWidth) nx = window.innerWidth - dragWin.offsetWidth;
+    if (ny + dragWin.offsetHeight > window.innerHeight) ny = window.innerHeight - dragWin.offsetHeight;
+    dragWin.style.left = nx + "px";
+    dragWin.style.top = ny + "px";
+});
 
-function drawStarSky(){
-    ctx.fillStyle="#000000";
-    ctx.fillRect(0,0,w,h);
-    rotateAngle += 0.0004;
+document.addEventListener('mouseup', () => {
+    isDrag = false;
+});
 
-    ctx.save();
-    ctx.translate(w/2,h/2);
-    ctx.rotate(rotateAngle);
-    ctx.translate(-w/2,-h/2);
-
-    ctx.strokeStyle="rgba(160,190,255,0.18)";
-    ctx.lineWidth=0.5;
-    virgoLinks.forEach(([a,b])=>{
-        const s1 = virgoStarList[a];
-        const s2 = virgoStarList[b];
-        ctx.beginPath();
-        ctx.moveTo(s1.x,s1.y);
-        ctx.lineTo(s2.x,s2.y);
-        ctx.stroke();
-    })
-    ctx.restore();
-
-    virgoStarList.forEach(s=>{
-        const alpha = 0.4 + Math.sin(Date.now()*s.twinkle)*0.45;
-        ctx.beginPath();
-        ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-        ctx.fillStyle=`rgba(220,235,255,${alpha})`;
-        ctx.fill();
-    })
-    stars.forEach(s=>{
-        const alpha = 0.3 + Math.sin(Date.now()*s.twinkle)*0.4;
-        ctx.beginPath();
-        ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
-        ctx.fillStyle=`rgba(255,255,255,${alpha})`;
-        ctx.fill();
-    })
-    requestAnimationFrame(drawStarSky);
-}
-drawStarSky();
-
-//预设常用色板
+//色板
 const colorList = [
-    "#ff0000","#ff8800","#ffff00","#00ff00","#00ffff","#0088ff",
-    "#0000ff","#8800ff","#ff00ff","#ffffff","#888888","#000000",
-    "#d62828","#f77f00","#fcbf49","#0096c7","#023e8a","#7209b7",
-    "#e63946","#457b9d","#1d3557","#f1faee","#a8dadc","#2a9d8f"
+    "#ffffff","#f8f9fa","#dee2e6","#adb5bd","#6c757d","#343a40","#212529","#000000",
+    "#ff0000","#ff4444","#ff8888","#ffbbbb","#ff8800","#ffaa44","#ffcc88","#ffeebb",
+    "#ffff00","#ffff88","#aaff00","#44ff00","#00ff44","#00ff88","#00ffff","#44ffff",
+    "#00bbff","#0088ff","#0044ff","#0000ff","#4400ff","#8800ff","#bb00ff","#ff00ff",
+    "#ff44bb","#ff88dd","#d62828","#f77f00","#fcbf49","#eae2b7","#003049","#0096c7",
+    "#023e8a","#7209b7","#b5179e","#480ca8","#3a0ca3","#4361ee","#4cc9f0","#e63946",
+    "#457b9d","#1d3557","#f1faee","#a8dadc","#2a9d8f","#264653","#e9c46a","#f4a261",
+    "#22223b","#4a4e69","#9a8c98","#c9ada7","#f2e9e4","#083d77","#ebebd3","#f79256"
 ];
 const paletteBox = document.getElementById("paletteBox");
 const hexOutput = document.getElementById("hexOutput");
-//渲染色块
 colorList.forEach(hex=>{
     const div = document.createElement("div");
     div.className = "color-item";
@@ -322,6 +294,7 @@ colorList.forEach(hex=>{
     paletteBox.appendChild(div);
 })
 
+//逐字打字动画
 const titleText = "今日补偿密码";
 const titleDom = document.getElementById('titleDom');
 
@@ -336,15 +309,15 @@ async function typeEffect(){
         titleDom.innerText = titleDom.innerText.substring(1);
         await sleep(180);
     }
-    await sleep(600);
+    await sleep(1000);
     typeEffect();
 }
-
 function sleep(ms){
     return new Promise(resolve=>setTimeout(resolve,ms));
 }
 typeEffect();
 
+//密码计算
 function getShortCode(d){
     const y = String(d.getFullYear()).slice(-2);
     const m = d.getMonth()+1;
@@ -362,8 +335,9 @@ const plus3Code = todayCode + 3;
 
 const total = BigInt(todayCode) * BigInt(yestCode) * BigInt(plus3Code);
 const last8 = total % 100000000n;
-document.getElementById('out').innerText = last8.toString();
+document.getElementById("out").innerText = last8.toString();
 
+//点击烟花
 document.addEventListener('click',e=>{
   for(let i=0;i<12;i++){
     const fire = document.createElement('div');
@@ -382,6 +356,7 @@ document.addEventListener('click',e=>{
   }
 })
 
+//访问统计弹窗
 let customShowNum = null;
 const customPvShow = document.getElementById("customPvShow");
 const mask = document.getElementById('mask');
@@ -427,7 +402,6 @@ function modalConfirm(){
         modalClose();
     }
 }
-
 document.getElementById('modalInput').addEventListener('keydown',e=>{
     if(e.key==='Enter') modalConfirm();
 })
